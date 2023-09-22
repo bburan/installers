@@ -1,2 +1,2 @@
-from cochleogram.main import main_batch
+from abr.main import main_batch
 main_batch()
