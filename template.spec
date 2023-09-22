@@ -26,9 +26,9 @@ a = Analysis(
 collect.append(a.binaries)
 collect.append(a.zipfiles)
 collect.append(a.datas)
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 for script in scripts:
-	pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 	exe = EXE(
 		pyz,
 		a.scripts,
