@@ -7,7 +7,7 @@
 
 
 Name "${ui_name}"
-OutFile "${package}-${version}.exe"
+OutFile "dist/${package}-${version}.exe"
 InstallDir "$LocalAppData\${package}-${version}"
 
 RequestExecutionLevel user
