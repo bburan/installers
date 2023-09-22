@@ -6,23 +6,28 @@ scripts = [s.strip() for s in os.environ['INSTALLER_SCRIPTS'].split(';')]
 block_cipher = None
 collect = []
 
-for script in scripts:
-	a = Analysis(
-		[f'scripts/{name}/{script}'],
-		pathex=[],
-		binaries=[],
-		datas=[],
-		hiddenimports=[],
-		hookspath=['hooks'],
-		hooksconfig={},
-		runtime_hooks=[],
-		excludes=[],
-		win_no_prefer_redirects=False,
-		win_private_assemblies=False,
-		cipher=block_cipher,
-		noarchive=False,
-	)
+a = Analysis(
+	[f'scripts/{name}/{scripts[0]}'],
+	pathex=[],
+	binaries=[],
+	datas=[],
+	hiddenimports=[],
+	hookspath=['hooks'],
+	hooksconfig={
+		"matplotlib": { "backends": ["QtAgg", "PDF"] },
+	},
+	runtime_hooks=[],
+	excludes=[],
+	win_no_prefer_redirects=False,
+	win_private_assemblies=False,
+	cipher=block_cipher,
+	noarchive=False,
+)
+collect.append(a.binaries)
+collect.append(a.zipfiles)
+collect.append(a.datas)
 
+for script in scripts:
 	pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 	exe = EXE(
 		pyz,
@@ -41,10 +46,6 @@ for script in scripts:
 		codesign_identity=None,
 		entitlements_file=None,
 	)
-
-	collect.append(a.binaries)
-	collect.append(a.zipfiles)
-	collect.append(a.datas)
 	collect.append(exe)
 
 coll = COLLECT(
