@@ -2,14 +2,16 @@
 # adapted from https://stackoverflow.com/questions/63468006
 
 import os
-import pathlib
+from pathlib import Path
+import shutil
 import string
 import subprocess
-import tempfile
+import time
 import venv
 
+BUILD_FOLDER = Path(__file__).parent / 'build'
 
-makensis_exe = "c:/progra~2/NSIS/Bin/makensis.exe"
+MAKENSIS_EXE = "c:/progra~2/NSIS/Bin/makensis.exe"
 
 PKG_CONFIGS = {
     'cochleogram': {
@@ -41,71 +43,108 @@ class EnvBuilder(venv.EnvBuilder):
         self.context = context
 
 
-def main(package):
+def main(package, clean):
+    tic = time.time()
     config = PKG_CONFIGS[package]
     env = os.environ.copy()
     env['INSTALLER_NAME'] = package
     env['INSTALLER_SCRIPTS'] = ';'.join(config.get('scripts'))
 
-    with tempfile.TemporaryDirectory() as target_dir_path:
-        print(f"Creating virtual env at '{target_dir_path}'.")
+    if clean and BUILD_FOLDER.exists():
+        shutil.rmtree(BUILD_FOLDER)
 
+    venv_folder = BUILD_FOLDER / 'venv' / package
+
+    # Create or obtain context for the venv
+    if not venv_folder.exists():
+        print(f"Creating virtual env at '{venv_folder}'.")
         venv_builder = EnvBuilder(with_pip=True)
-        venv_builder.create(str(target_dir_path))
-        venv_context = venv_builder.context
+        venv_builder.create(str(venv_folder))
+        venv_exe = venv_builder.context.env_exe
+        print(venv_exe)
+    else:
+        venv_exe = str(venv_folder / 'Scripts' / 'python.exe')
 
-        pip_install_command = [
-            venv_context.env_exe,
-            '-m',
-            'pip',
-            'install',
-            config.get('pip-install', package),
-            'PyInstaller',
-        ]
-        subprocess.check_call(pip_install_command)
+    # Install PyInstaller. Do this separately since we don't need to call
+    # `--upgrade` for this particular command.
+    pip_install_command = [
+        venv_exe,
+        '-m',
+        'pip',
+        'install',
+        'PyInstaller',
+    ]
+    subprocess.check_call(pip_install_command)
 
-        version_command = [
-            venv_context.env_exe,
-            '-c',
-            f'import {package}.version; print({package}.version.__version__)'
-        ]
-        process = subprocess.Popen(version_command, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-        out, err = process.communicate()
-        version = out.decode().strip()
-        if not version:
-            raise ValueError('Could not get version of {package}')
+    # Now, install the package using `--upgrade` that way we can pull in an
+    # updated version of the package if one exists.
+    pip_install_command = [
+        venv_exe,
+        '-m',
+        'pip',
+        'install',
+        '--upgrade',
+        config.get('pip-install', package),
+    ]
+    subprocess.check_call(pip_install_command)
 
-        print(f"Generating pyinstaller for version {version}")
+    # Now, ensure enaml files are compiled
+    enaml_compile_command = [
+        venv_exe,
+        '-m'
+        'enaml.compile_all',
+        venv_folder / 'Lib' / 'site-packages'
+    ]
+    subprocess.check_call(enaml_compile_command)
 
-        pyinstaller_command = [
-            venv_context.env_exe,
-            '-m',
-            'PyInstaller',
-            '--clean',
-            '-y',
-            f'template.spec',
-        ]
-        subprocess.check_call(pyinstaller_command, env=env)
+    # Now, get version of package we are creating
+    version_command = [
+        venv_exe,
+        '-c',
+        f'import {package}.version; print({package}.version.__version__)'
+    ]
+    process = subprocess.Popen(version_command, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    out, err = process.communicate()
+    version = out.decode().strip()
+    if not version:
+        raise ValueError('Could not get version of {package}')
+    print(f"Generating pyinstaller for version {version}")
 
-        ui_name = config['name']
-        icon = config['icon']
-        script = pathlib.Path(config['scripts'][0]).with_suffix('.exe')
-        makensis_command = [
-            makensis_exe,
-            f'/Dversion={version}',
-            f'/Dpackage={package}',
-            f'/Dui_name={ui_name}',
-            f'/Dicon_path={icon}',
-            f'/Dscript={script}',
-            'template.nsi',
-        ]
-        subprocess.check_call(makensis_command)
+    # Running pyinstaller
+    pyinstaller_command = [
+        venv_exe,
+        '-m',
+        'PyInstaller',
+        '-y',
+        '--distpath',
+        str(BUILD_FOLDER / 'pyinstaller'),
+        f'template.spec',
+    ]
+    subprocess.check_call(pyinstaller_command, env=env)
+
+    ui_name = config['name']
+    icon = config['icon']
+    script = Path(config['scripts'][0]).with_suffix('.exe')
+    makensis_command = [
+        MAKENSIS_EXE,
+        f'/Dversion={version}',
+        f'/Dpackage={package}',
+        f'/Dui_name={ui_name}',
+        f'/Dicon_path={icon}',
+        f'/Dscript={script}',
+        'template.nsi',
+    ]
+    subprocess.check_call(makensis_command)
+
+    print(f"Total runtime {time.time()-tic:.1f}")
+    return
 
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser('make-installer')
     parser.add_argument('package')
+    parser.add_argument('-c', '--clean', action='store_true', help='Remove cache')
     args = parser.parse_args()
-    main(args.package)
+    main(args.package, args.clean)
