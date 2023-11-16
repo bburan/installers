@@ -39,7 +39,7 @@ Section ""
     WriteRegStr SHCTX $key "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
     WriteRegStr SHCTX $key "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
 
-	createShortCut "$SMPROGRAMS\${ui_name} ${version}.lnk" "$INSTDIR\${package}\${script}" "" "$INSTDIR\${package}\${icon_path}"
+	createShortCut "$SMPROGRAMS\${ui_name} ${version}.lnk" "$INSTDIR\${package}\${script}" "" "$INSTDIR\${package}\_internal\${icon_path}"
 SectionEnd
 
 Section "uninstall"
