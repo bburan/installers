@@ -43,7 +43,7 @@ class EnvBuilder(venv.EnvBuilder):
         self.context = context
 
 
-def main(package, clean, steps=None):
+def main(package, clean, steps):
     tic = time.time()
     config = PKG_CONFIGS[package]
     env = os.environ.copy()
@@ -111,8 +111,9 @@ def main(package, clean, steps=None):
         '-c',
         f'import {package}.version; print({package}.version.__version__)'
     ]
+    print(' '.join(version_command))
 
-    if steps is not None and 'pip' in steps:
+    if 'pip' in steps:
         subprocess.check_call(pip_pyinstaller_install_command)
         subprocess.check_call(pip_package_install_command)
         subprocess.check_call(enaml_compile_command)
@@ -126,10 +127,10 @@ def main(package, clean, steps=None):
         raise ValueError('Could not get version of {package}')
     print(f"Generating pyinstaller for version {version}")
 
-    if steps is not None and 'pyinstaller' in steps:
+    if 'pyinstaller' in steps:
         subprocess.check_call(pyinstaller_command, env=env)
 
-    if steps is not None and 'nsis' in steps:
+    if 'nsis' in steps:
         ui_name = config['name']
         icon = config['icon']
         script = Path(config['scripts'][0]).with_suffix('.exe')
@@ -149,10 +150,12 @@ def main(package, clean, steps=None):
 
 
 if __name__ == '__main__':
+    steps = ['pip', 'pyinstaller', 'nsis']
     import argparse
     parser = argparse.ArgumentParser('make-installer')
     parser.add_argument('package')
     parser.add_argument('-c', '--clean', action='store_true', help='Remove cache')
-    parser.add_argument('-s', '--step', nargs='+', choices=['pip', 'pyinstaller', 'nsis'])
+    parser.add_argument('-s', '--steps', nargs='+', choices=steps, default=steps)
     args = parser.parse_args()
+    print(args)
     main(args.package, args.clean, args.step)
