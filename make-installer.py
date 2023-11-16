@@ -43,7 +43,7 @@ class EnvBuilder(venv.EnvBuilder):
         self.context = context
 
 
-def main(package, clean):
+def main(package, clean, steps=None):
     tic = time.time()
     config = PKG_CONFIGS[package]
     env = os.environ.copy()
@@ -67,18 +67,17 @@ def main(package, clean):
 
     # Install PyInstaller. Do this separately since we don't need to call
     # `--upgrade` for this particular command.
-    pip_install_command = [
+    pip_pyinstaller_install_command = [
         venv_exe,
         '-m',
         'pip',
         'install',
         'PyInstaller',
     ]
-    subprocess.check_call(pip_install_command)
 
     # Now, install the package using `--upgrade` that way we can pull in an
     # updated version of the package if one exists.
-    pip_install_command = [
+    pip_package_install_command = [
         venv_exe,
         '-m',
         'pip',
@@ -86,7 +85,6 @@ def main(package, clean):
         '--upgrade',
         config.get('pip-install', package),
     ]
-    subprocess.check_call(pip_install_command)
 
     # Now, ensure enaml files are compiled
     enaml_compile_command = [
@@ -95,23 +93,8 @@ def main(package, clean):
         'enaml.compile_all',
         venv_folder / 'Lib' / 'site-packages'
     ]
-    subprocess.check_call(enaml_compile_command)
 
-    # Now, get version of package we are creating
-    version_command = [
-        venv_exe,
-        '-c',
-        f'import {package}.version; print({package}.version.__version__)'
-    ]
-    process = subprocess.Popen(version_command, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
-    out, err = process.communicate()
-    version = out.decode().strip()
-    if not version:
-        raise ValueError('Could not get version of {package}')
-    print(f"Generating pyinstaller for version {version}")
-
-    # Running pyinstaller
+    # Running pyinstaller 
     pyinstaller_command = [
         venv_exe,
         '-m',
@@ -121,21 +104,45 @@ def main(package, clean):
         str(BUILD_FOLDER / 'pyinstaller'),
         f'template.spec',
     ]
-    subprocess.check_call(pyinstaller_command, env=env)
 
-    ui_name = config['name']
-    icon = config['icon']
-    script = Path(config['scripts'][0]).with_suffix('.exe')
-    makensis_command = [
-        MAKENSIS_EXE,
-        f'/Dversion={version}',
-        f'/Dpackage={package}',
-        f'/Dui_name={ui_name}',
-        f'/Dicon_path={icon}',
-        f'/Dscript={script}',
-        'template.nsi',
+    # Now, get version of package we are creating
+    version_command = [
+        venv_exe,
+        '-c',
+        f'import {package}.version; print({package}.version.__version__)'
     ]
-    subprocess.check_call(makensis_command)
+
+    if steps is not None and 'pip' in steps:
+        subprocess.check_call(pip_pyinstaller_install_command)
+        subprocess.check_call(pip_package_install_command)
+        subprocess.check_call(enaml_compile_command)
+
+    # Get version
+    process = subprocess.Popen(version_command, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    out, err = process.communicate()
+    version = out.decode().strip()
+    if not version:
+        raise ValueError('Could not get version of {package}')
+    print(f"Generating pyinstaller for version {version}")
+
+    if steps is not None and 'pyinstaller' in steps:
+        subprocess.check_call(pyinstaller_command, env=env)
+
+    if steps is not None and 'nsis' in steps:
+        ui_name = config['name']
+        icon = config['icon']
+        script = Path(config['scripts'][0]).with_suffix('.exe')
+        makensis_command = [
+            MAKENSIS_EXE,
+            f'/Dversion={version}',
+            f'/Dpackage={package}',
+            f'/Dui_name={ui_name}',
+            f'/Dicon_path={icon}',
+            f'/Dscript={script}',
+            'template.nsi',
+        ]
+        subprocess.check_call(makensis_command)
 
     print(f"Total runtime {time.time()-tic:.1f}")
     return
@@ -146,5 +153,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('make-installer')
     parser.add_argument('package')
     parser.add_argument('-c', '--clean', action='store_true', help='Remove cache')
+    parser.add_argument('-s', '--step', nargs='+', choices=['pip', 'pyinstaller', 'nsis'])
     args = parser.parse_args()
-    main(args.package, args.clean)
+    main(args.package, args.clean, args.step)
