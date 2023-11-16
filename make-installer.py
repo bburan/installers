@@ -18,7 +18,7 @@ PKG_CONFIGS = {
         'name': 'Cochleogram',
         'icon': r'cochleogram\icons\main-icon.ico',
         'scripts': ['cochleogram-main.py'],
-        'pip-install': 'cochleogram[lif]',
+        'pip-install': 'cochleogram[lif,czi]',
     },
     'abr': {
         'name': 'ABR',
