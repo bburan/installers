@@ -29,7 +29,7 @@ Var /global key
 
 Section ""
 	SetOutPath $INSTDIR
-	File /r "dist\${package}"
+	File /r "build\pyinstaller\${package}"
 
     WriteUninstaller "$INSTDIR\uninstall.exe"
     ; First, create key in registry that will show up in Add/Remove programs
