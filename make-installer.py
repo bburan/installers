@@ -20,6 +20,12 @@ PKG_CONFIGS = {
         'scripts': ['cochleogram-main.py'],
         'pip-install': 'cochleogram[lif,czi]',
     },
+    'synaptogram': {
+        'name': 'Synaptogram',
+        'icon': r'synaptogram\icons\main-icon.ico',
+        'scripts': ['synaptogram-main.py'],
+        'pip-install': 'synaptogram',
+    },
     'abr': {
         'name': 'ABR',
         'icon': r'abr\abr-icon.ico',
