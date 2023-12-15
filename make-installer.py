@@ -138,14 +138,16 @@ def main(package, clean, steps):
 
     if 'nsis' in steps:
         ui_name = config['name']
-        icon = config['icon']
+        icon_path = config['icon']
+        install_icon_path = f'build\pyinstaller\{package}\_internal\{icon_path}'
         script = Path(config['scripts'][0]).with_suffix('.exe')
         makensis_command = [
             MAKENSIS_EXE,
             f'/Dversion={version}',
             f'/Dpackage={package}',
             f'/Dui_name={ui_name}',
-            f'/Dicon_path={icon}',
+            f'/Dicon_path={icon_path}',
+            f'/Dinstall_icon_path={install_icon_path}',
             f'/Dscript={script}',
             'template.nsi',
         ]
@@ -164,4 +166,4 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--steps', nargs='+', choices=steps, default=steps)
     args = parser.parse_args()
     print(args)
-    main(args.package, args.clean, args.step)
+    main(args.package, args.clean, args.steps)

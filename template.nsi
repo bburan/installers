@@ -16,8 +16,8 @@ ShowInstDetails show
 Var /global key
 
 !define MUI_FINISHPAGE_NOAUTOCLOSE true
-#!define MUI_ICON 'icon.ico'
-#!define MUI_UNICON 'icon.ico'
+!define MUI_ICON '${install_icon_path}'
+!define MUI_UNICON '${install_icon_path}'
 
 
 !insertmacro MUI_PAGE_WELCOME
