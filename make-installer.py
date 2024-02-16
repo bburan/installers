@@ -11,7 +11,7 @@ import venv
 
 BUILD_FOLDER = Path(__file__).parent / 'build'
 
-MAKENSIS_EXE = "c:/progra~2/NSIS/Bin/makensis.exe"
+MAKENSIS_EXE = "c:/Program Files (x86)/NSIS/Bin/makensis.exe"
 
 PKG_CONFIGS = {
     'cochleogram': {
@@ -34,6 +34,17 @@ PKG_CONFIGS = {
             'abr-gui.py',
             'abr-batch.py',
             'abr-compare.py',
+        ],
+    },
+    'ncrar_abr': {
+        'name': 'NCRAR ABR',
+        'icon': r'ncrar_abr\abr-icon.ico',
+        'scripts': [
+            'ncrar-abr-main.py',
+            'ncrar-abr-aggregate.py',
+            'ncrar-abr-gui.py',
+            'ncrar-abr-batch.py',
+            'ncrar-abr-compare.py',
         ],
     }
 }
@@ -111,6 +122,11 @@ def main(package, clean, steps):
         f'template.spec',
     ]
 
+    if 'pip' in steps:
+        subprocess.check_call(pip_pyinstaller_install_command)
+        subprocess.check_call(pip_package_install_command)
+        subprocess.check_call(enaml_compile_command)
+
     # Now, get version of package we are creating
     version_command = [
         venv_exe,
@@ -118,19 +134,13 @@ def main(package, clean, steps):
         f'import {package}.version; print({package}.version.__version__)'
     ]
     print(' '.join(version_command))
-
-    if 'pip' in steps:
-        subprocess.check_call(pip_pyinstaller_install_command)
-        subprocess.check_call(pip_package_install_command)
-        subprocess.check_call(enaml_compile_command)
-
     # Get version
     process = subprocess.Popen(version_command, stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
     out, err = process.communicate()
     version = out.decode().strip()
     if not version:
-        raise ValueError('Could not get version of {package}')
+        raise ValueError(f'Could not get version of {package}')
     print(f"Generating pyinstaller for version {version}")
 
     if 'pyinstaller' in steps:
