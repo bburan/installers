@@ -10,6 +10,7 @@ import time
 import venv
 
 BUILD_FOLDER = Path(__file__).parent / 'build'
+DIST_FOLDER = Path(__file__).parent / 'dist'
 
 MAKENSIS_EXE = "c:/Program Files (x86)/NSIS/Bin/makensis.exe"
 
@@ -60,7 +61,7 @@ class EnvBuilder(venv.EnvBuilder):
         self.context = context
 
 
-def main(package, clean, steps):
+def main(package, clean, steps, onefile):
     tic = time.time()
     config = PKG_CONFIGS[package]
     env = os.environ.copy()
@@ -111,7 +112,7 @@ def main(package, clean, steps):
         venv_folder / 'Lib' / 'site-packages'
     ]
 
-    # Running pyinstaller 
+    # Running pyinstaller
     pyinstaller_command = [
         venv_exe,
         '-m',
@@ -120,6 +121,17 @@ def main(package, clean, steps):
         '--distpath',
         str(BUILD_FOLDER / 'pyinstaller'),
         f'template.spec',
+    ]
+
+    # Running pyinstaller
+    pyinstaller_onefile_command = [
+        venv_exe,
+        '-m',
+        'PyInstaller',
+        '-y',
+        '--distpath',
+        str(BUILD_FOLDER / 'pyinstaller'),
+        f'onefile-template.spec',
     ]
 
     if 'pip' in steps:
@@ -144,9 +156,16 @@ def main(package, clean, steps):
     print(f"Generating pyinstaller for version {version}")
 
     if 'pyinstaller' in steps:
-        subprocess.check_call(pyinstaller_command, env=env)
+        if onefile:
+            env['PYINSTALLER_EXE_NAME'] = f'{package}-portable-{version}'
+            print(env)
+            subprocess.check_call(pyinstaller_onefile_command, env=env)
+        else:
+            env['PYINSTALLER_EXE_NAME'] = f'{package}'
+            subprocess.check_call(pyinstaller_command, env=env)
 
-    if 'nsis' in steps:
+    if 'nsis' in steps and not onefile:
+        DIST_FOLDER.mkdir(exist_ok=True)
         ui_name = config['name']
         icon_path = config['icon']
         install_icon_path = f'build\pyinstaller\{package}\_internal\{icon_path}'
@@ -174,6 +193,7 @@ if __name__ == '__main__':
     parser.add_argument('package')
     parser.add_argument('-c', '--clean', action='store_true', help='Remove cache')
     parser.add_argument('-s', '--steps', nargs='+', choices=steps, default=steps)
+    parser.add_argument('-o', '--onefile', action='store_true', help='Generate standalone file')
     args = parser.parse_args()
     print(args)
-    main(args.package, args.clean, args.steps)
+    main(args.package, args.clean, args.steps, args.onefile)
