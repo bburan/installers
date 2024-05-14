@@ -1,2 +1,2 @@
-from ncrar_abr.app import main
-main()
+from ncrar_abr.app import main_launcher
+main_launcher()
