@@ -35,7 +35,7 @@ Section ""
     ; First, create key in registry that will show up in Add/Remove programs
     StrCpy $key "Software\Microsoft\Windows\CurrentVersion\Uninstall\${package}-${version}"
     WriteRegStr SHCTX $key "DisplayName" "${ui_name} ${version}"
-    WriteRegStr SHCTX $key "DisplayIcon" "$INSTDIR\${package}\${icon_path}"
+    WriteRegStr SHCTX $key "DisplayIcon" "$INSTDIR\${package}\_internal\${icon_path}"
     WriteRegStr SHCTX $key "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
     WriteRegStr SHCTX $key "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
 
