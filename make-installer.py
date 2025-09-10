@@ -47,7 +47,14 @@ PKG_CONFIGS = {
             'ncrar-abr-batch.py',
             'ncrar-abr-compare.py',
         ],
-    }
+    },
+    'ncrar_eeg_viewer': {
+        'name': 'NCRAR EEG Viewer',
+        'icon': r'ncrar_eeg_viewer\main-icon.ico',
+        'scripts': [
+            'ncrar-eeg-viewer-main.py'
+        ],
+    },
 }
 
 
