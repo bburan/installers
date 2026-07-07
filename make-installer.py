@@ -19,6 +19,12 @@ PKG_CONFIGS = {
         'name': 'Cochleogram',
         'icon': r'cochleogram\icons\main-icon.ico',
         'scripts': ['cochleogram-main.py'],
+        'pip-install': 'cochleogram[lif,czi,ims]',
+    },
+    'test': {
+        'name': 'Test',
+        'icon': r'cochleogram\icons\main-icon.ico',
+        'scripts': ['test-main.py'],
         'pip-install': 'cochleogram[lif,czi]',
     },
     'synaptogram': {
@@ -98,6 +104,7 @@ def main(package, clean, steps, onefile):
         'pip',
         'install',
         'PyInstaller',
+        'pyinstaller-hooks-contrib',
     ]
 
     # Now, install the package using `--upgrade` that way we can pull in an
