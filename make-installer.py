@@ -21,11 +21,12 @@ PKG_CONFIGS = {
         'scripts': ['cochleogram-main.py'],
         'pip-install': 'cochleogram[lif,czi,ims]',
     },
-    'test': {
-        'name': 'Test',
-        'icon': r'cochleogram\icons\main-icon.ico',
+    'qt-diag': {
+        'name': 'Qt Diagnostic',
+        'icon': None,
         'scripts': ['test-main.py'],
-        'pip-install': 'cochleogram[lif,czi]',
+        'pip-install': 'PySide6',
+        'version-cmd': 'from PySide6 import __version__; print(__version__)',
     },
     'synaptogram': {
         'name': 'Synaptogram',
@@ -151,14 +152,13 @@ def main(package, clean, steps, onefile):
     if 'pip' in steps:
         subprocess.check_call(pip_pyinstaller_install_command)
         subprocess.check_call(pip_package_install_command)
-        subprocess.check_call(enaml_compile_command)
+        if 'version-cmd' not in config:
+            subprocess.check_call(enaml_compile_command)
 
     # Now, get version of package we are creating
-    version_command = [
-        venv_exe,
-        '-c',
-        f'import {package}.version; print({package}.version.__version__)'
-    ]
+    version_expr = config.get('version-cmd',
+                              f'import {package}.version; print({package}.version.__version__)')
+    version_command = [venv_exe, '-c', version_expr]
     print(' '.join(version_command))
     # Get version
     process = subprocess.Popen(version_command, stdout=subprocess.PIPE,
@@ -181,19 +181,22 @@ def main(package, clean, steps, onefile):
     if 'nsis' in steps and not onefile:
         DIST_FOLDER.mkdir(exist_ok=True)
         ui_name = config['name']
-        icon_path = config['icon']
-        install_icon_path = f'build\pyinstaller\{package}\_internal\{icon_path}'
+        icon_path = config.get('icon')
         script = Path(config['scripts'][0]).with_suffix('.exe')
         makensis_command = [
             MAKENSIS_EXE,
             f'/Dversion={version}',
             f'/Dpackage={package}',
             f'/Dui_name={ui_name}',
-            f'/Dicon_path={icon_path}',
-            f'/Dinstall_icon_path={install_icon_path}',
             f'/Dscript={script}',
-            'template.nsi',
         ]
+        if icon_path is not None:
+            install_icon_path = f'build\pyinstaller\{package}\_internal\{icon_path}'
+            makensis_command += [
+                f'/Dicon_path={icon_path}',
+                f'/Dinstall_icon_path={install_icon_path}',
+            ]
+        makensis_command.append('template.nsi')
         subprocess.check_call(makensis_command)
 
     print(f"Total runtime {time.time()-tic:.1f}")

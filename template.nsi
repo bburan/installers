@@ -16,8 +16,10 @@ ShowInstDetails show
 Var /global key
 
 !define MUI_FINISHPAGE_NOAUTOCLOSE true
-!define MUI_ICON '${install_icon_path}'
-!define MUI_UNICON '${install_icon_path}'
+!ifdef install_icon_path
+  !define MUI_ICON '${install_icon_path}'
+  !define MUI_UNICON '${install_icon_path}'
+!endif
 
 
 !insertmacro MUI_PAGE_WELCOME
@@ -35,11 +37,17 @@ Section ""
     ; First, create key in registry that will show up in Add/Remove programs
     StrCpy $key "Software\Microsoft\Windows\CurrentVersion\Uninstall\${package}-${version}"
     WriteRegStr SHCTX $key "DisplayName" "${ui_name} ${version}"
-    WriteRegStr SHCTX $key "DisplayIcon" "$INSTDIR\${package}\_internal\${icon_path}"
+    !ifdef icon_path
+      WriteRegStr SHCTX $key "DisplayIcon" "$INSTDIR\${package}\_internal\${icon_path}"
+    !endif
     WriteRegStr SHCTX $key "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
     WriteRegStr SHCTX $key "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
 
-	createShortCut "$SMPROGRAMS\${ui_name} ${version}.lnk" "$INSTDIR\${package}\${script}" "" "$INSTDIR\${package}\_internal\${icon_path}"
+    !ifdef icon_path
+      createShortCut "$SMPROGRAMS\${ui_name} ${version}.lnk" "$INSTDIR\${package}\${script}" "" "$INSTDIR\${package}\_internal\${icon_path}"
+    !else
+      createShortCut "$SMPROGRAMS\${ui_name} ${version}.lnk" "$INSTDIR\${package}\${script}"
+    !endif
 SectionEnd
 
 Section "uninstall"
