@@ -5,7 +5,7 @@ from PyInstaller.utils.hooks import collect_data_files
 datas = collect_data_files('cochleogram', excludes=['**/*.enaml'])
 
 hiddenimports = [
-    'PyQt6',
+    'PyQt5',
     'cochleogram.model',
     'cochleogram.plot',
     'cochleogram.presenter',

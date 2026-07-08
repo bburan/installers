@@ -19,7 +19,7 @@ PKG_CONFIGS = {
         'name': 'Cochleogram',
         'icon': r'cochleogram\icons\main-icon.ico',
         'scripts': ['cochleogram-main.py'],
-        'pip-install': 'cochleogram[lif,czi,ims]',
+        'pip-install': ['cochleogram[lif,czi,ims]', 'enaml[qt5-pyqt]'],
     },
     'qt-diag': {
         'name': 'Qt Diagnostic',
@@ -109,15 +109,15 @@ def main(package, clean, steps, onefile):
     ]
 
     # Now, install the package using `--upgrade` that way we can pull in an
-    # updated version of the package if one exists.
+    # updated version of the package if one exists.  pip-install may be a
+    # string or a list; passing multiple specs in one call lets pip resolve
+    # dependency overrides (e.g. swapping Qt backends) consistently.
+    pip_install = config.get('pip-install', package)
+    if not isinstance(pip_install, list):
+        pip_install = [pip_install]
     pip_package_install_command = [
-        venv_exe,
-        '-m',
-        'pip',
-        'install',
-        '--upgrade',
-        config.get('pip-install', package),
-    ]
+        venv_exe, '-m', 'pip', 'install', '--upgrade',
+    ] + pip_install
 
     # Now, ensure enaml files are compiled
     enaml_compile_command = [
