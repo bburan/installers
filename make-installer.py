@@ -62,6 +62,23 @@ PKG_CONFIGS = {
             'ncrar-eeg-viewer-main.py'
         ],
     },
+    'cftscal': {
+        'name': 'CFTS Calibration Suite',
+        'scripts': [
+            # cftscal-main.py must stay first: the nsis step reads
+            # config['scripts'][0] for the Start Menu shortcut target.
+            # cftscal shells out to a separate `psi-main` process per
+            # calibration run (see cftscal/plugins/settings.py:_run_cal) --
+            # psi-main.py builds that as a sibling exe (psi-main.exe) in
+            # the same dist folder. _run_cal invokes it by bare name;
+            # Windows' CreateProcess searches the calling exe's own
+            # directory before PATH, so no path/extension handling is
+            # needed on cftscal's side.
+            'cftscal-main.py',
+            'psi-main.py',
+        ],
+        'pip-install': ['cftscal', 'enaml[qt6-pyside]', 'psiexperiment[ni,tdt,soundcard]'],
+    }
 }
 
 
@@ -76,6 +93,16 @@ class EnvBuilder(venv.EnvBuilder):
 
 
 def main(package, clean, steps, onefile):
+    # NOTE: -c/--clean wipes build/venv along with everything else, and the
+    # 'pip' step below always installs from PyPI per PKG_CONFIGS -- it has
+    # no notion of a local checkout. If you're testing an unreleased fix in
+    # a dependency (e.g. cftscal, psiexperiment) by pip-installing your own
+    # checkout into build/venv/<package>, running `-c -s pip ...` (or the
+    # default steps, which include 'pip') silently discards that install
+    # and rebuilds against the stale/unpatched PyPI release instead -- with
+    # no error, just a build that quietly doesn't have your fix. Either
+    # skip 'pip' from -s, or re-run the local-checkout pip install
+    # immediately after a `-c` before rebuilding.
     tic = time.time()
     config = PKG_CONFIGS[package]
     env = os.environ.copy()
