@@ -64,6 +64,7 @@ PKG_CONFIGS = {
     },
     'cftscal': {
         'name': 'CFTS Calibration Suite',
+        'icon': r'cftscal\icons\main-icon.ico',
         'scripts': [
             # cftscal-main.py must stay first: the nsis step reads
             # config['scripts'][0] for the Start Menu shortcut target.
