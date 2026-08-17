@@ -3,7 +3,6 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 datas = collect_data_files('enaml', excludes=['**/*.enaml'])
 
-
 # enaml.workbench (and its ui/core sub-plugins) is only ever reached from
 # inside .enaml files -- cftscal/psi's own plugin manifests, and enaml's own
 # core_manifest.enaml/ui_manifest.enaml loaded via `with enaml.imports():` in
