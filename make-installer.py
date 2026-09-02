@@ -219,7 +219,7 @@ def main(package, clean, steps, onefile):
             f'/Dscript={script}',
         ]
         if icon_path is not None:
-            install_icon_path = f'build\pyinstaller\{package}\_internal\{icon_path}'
+            install_icon_path = rf'build\pyinstaller\{package}\_internal\{icon_path}'
             makensis_command += [
                 f'/Dicon_path={icon_path}',
                 f'/Dinstall_icon_path={install_icon_path}',
